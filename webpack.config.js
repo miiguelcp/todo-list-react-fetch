@@ -2,16 +2,14 @@ const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 var PrettierPlugin = require("prettier-webpack-plugin");
-const ESLintPlugin = require('eslint-webpack-plugin');
 const ErrorOverlayPlugin = require('error-overlay-webpack-plugin');
 
 const port = 3000;
-let publicUrl = `ws://localhost:${port}/ws`;
+let publicUrl = `http://localhost:${port}`;
 if(process.env.GITPOD_WORKSPACE_URL){
   const [schema, host] = process.env.GITPOD_WORKSPACE_URL.split('://');
-  publicUrl = `wss://${port}-${host}/ws`;
+  publicUrl = `${port}-${host}`;
 }
-console.log("publicUrl", publicUrl)
 
 module.exports = {
   entry: [
@@ -27,13 +25,15 @@ module.exports = {
         {
           test: /\.(js|jsx)$/,
           exclude: /node_modules/,
-          use: ['babel-loader']
+          use: ['babel-loader', 'eslint-loader']
         },
         {
-          test: /\.(css)$/, use: [{
+          test: /\.(css|scss)$/, use: [{
               loader: "style-loader" // creates style nodes from JS strings
           }, {
               loader: "css-loader" // translates CSS into CommonJS
+          }, {
+              loader: "sass-loader" // compiles Sass to CSS
           }]
         }, //css only files
         { 
@@ -50,22 +50,22 @@ module.exports = {
   },
   devtool: "source-map",
   devServer: {
-    port,
+    contentBase:  './dist',
     hot: true,
-    allowedHosts: "all",
+    disableHostCheck: true,
     historyApiFallback: true,
-    static: {
-      directory: path.resolve(__dirname, "dist"),
-    },
-    client: {
-      webSocketURL: publicUrl
-    },
+    public: publicUrl
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
-    // new ESLintPlugin({
-    //   files: path.resolve(__dirname, "src"),
-    // }),
+    new webpack.ProvidePlugin({
+      $: 'jquery',
+      Popper: 'popper.js',
+      jQuery: 'jquery',
+      // In case you imported plugins individually, you must also require them here:
+      Util: "exports-loader?Util!bootstrap/js/dist/util",
+      Dropdown: "exports-loader?Dropdown!bootstrap/js/dist/dropdown"
+    }),
     new HtmlWebpackPlugin({
         favicon: '4geeks.ico',
         template: 'template.html'
